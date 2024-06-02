@@ -43,7 +43,7 @@ class Product(models.Model):
     )
     is_active = models.BooleanField(default=False)
     objects = ActiveQueryset.as_manager()
-
+    
     def __str_(self):
         return self.name
     
@@ -56,6 +56,7 @@ class ProductLine(models.Model):
     
     is_active = models.BooleanField(default=False)
     order = OrderField(unique_for_field="product", blank=True)
+    objects = ActiveQueryset.as_manager()
 
     def clean(self):
         qs = ProductLine.objects.filter(product=self.product)
@@ -70,3 +71,23 @@ class ProductLine(models.Model):
     def __str__(self):
         return str(self.sku)
     
+
+class ProductImage(models.Model):
+    alternative_text = models.CharField(max_length=100)
+    url = models.ImageField(upload_to=None, default = "test.jpg")
+    productline = models.ForeignKey(
+        ProductLine, on_delete= models.CASCADE, related_name="product_image"
+    )
+
+    def clean(self):
+        qs = ProductImage.objects.filter(productline=self.productline)
+        for obj in qs:
+            if self.id != obj.id and self.order== obj.order:
+                raise ValidationError("Duplicate Value")
+
+    def save(self, *args, **Kwargs):
+        self.full_clean()
+        return super(ProductImage, self).save(*args, **Kwargs)
+    
+    def __str___(self):
+        return str(self.order)
